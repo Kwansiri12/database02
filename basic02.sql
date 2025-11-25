@@ -219,41 +219,133 @@ GROUP BY E.EmployeeID, FirstName,LastName;
 --------------------------------------------------------------------------
 /*14 : จงแสดงรหัสสินค้า ชื่อสินค้า ยอดขายรวม เฉพาะสินค้าที่นำมาจัดจำหน่ายจากประเทศญี่ปุ่น และมีการสั่งซื้อในปี 1997 และจัดส่งไปยังประเทศสหรัฐอเมริกา */
 --แบบ Product
-
+select P.ProductID,ProductName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Products AS P ,Suppliers AS S ,[Order Details] As OD ,Orders As O
+where P.SupplierID = S.SupplierID 
+    and P.ProductID = OD.ProductID 
+    and OD.OrderID = O.OrderID
+    And S.Country = 'Japan' 
+    And YEAR(OrderDate) = 1997
+    And O.ShipCountry = 'USA'
+GROUP BY P.ProductID,ProductName
 
 --แบบ Join
-
+select P.ProductID,ProductName,Sum(OD.UnitPrice * Quantity)AS totalVume 
+From Products AS P INNER JOIN Suppliers AS S On P.SupplierID = S.SupplierID
+                    INNER JOIN [Order Details] As OD On P.ProductID = OD.ProductID 
+                    INNER JOIN Orders As O On OD.OrderID = O.OrderID
+where S.Country = 'Japan' 
+    And YEAR(OrderDate) = 1997
+    And O.ShipCountry = 'USA'
 ----------------------------------------------------------------------------
 -- *** 5 ตาราง ***
 /*15 : จงแสดงรหัสลูกค้า ชื่อบริษัทลูกค้า ยอดสั่งซื้อรวมของการสั่งซื้อสินค้าประเภท Beverages ของลูกค้าแต่ละบริษัท  และสั่งซื้อในปี 1997 จัดเรียงตามยอดสั่งซื้อจากมากไปหาน้อย*/
 --แบบ Product
-
+select C.CustomerID,CompanyName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Customers AS C ,Orders As O , [Order Details] As OD
+    ,Products AS P ,Categories AS Ca
+where C.CustomerID = O.CustomerID 
+    and O.OrderID = OD.OrderID
+    and OD.ProductID = P.ProductID
+    and P.CategoryID = Ca.CategoryID
+    And Ca.CategoryName = 'Beverages'
+    And YEAR(OrderDate) = 1997
+GROUP BY C.CustomerID, CompanyName
+ORDER BY totalVume DESC
 
 --แบบ Join
-
+select C.CustomerID,CompanyName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Customers AS C INNER JOIN Orders As O On C.CustomerID = O.CustomerID
+                    INNER JOIN [Order Details] As OD On O.OrderID = OD.OrderID
+                    INNER JOIN Products AS P On OD.ProductID = P.ProductID
+                    INNER JOIN Categories AS Ca On P.CategoryID = Ca.CategoryID
+where Ca.CategoryName = 'Beverages' And YEAR(OrderDate) = 1997
+GROUP BY C.CustomerID, CompanyName
+ORDER BY totalVume DESC
 
 ---------------------------------------------------------------------------
 /*16 : จงแสดงรหัสผู้จัดส่ง ชื่อบริษัทที่จัดส่ง จำนวนใบสั่งซื้อที่จัดส่งสินค้าประเภท Seafood ไปยังประเทศสหรัฐอเมริกา ในปี 1997 */
 --แบบ Product
+select S.ShipperID,CompanyName,Count(O.OrderID)AS NumShipoedOrder
+from Shippers AS S , Orders As O , [Order Details] As OD
+    , Products AS P , Categories AS C
+where S.ShipperID = O.ShipVia 
+    and O.OrderID = OD.OrderID
+    and OD.ProductID = P.ProductID
+    and P.CategoryID = C.CategoryID
+    And C.CategoryName = 'Seafood'
+    And O.ShipCountry = 'USA'
+    And YEAR(ShippedDate) = 1997
+GROUP BY S.ShipperID,CompanyName
 
 
 --แบบ Join
-
+select s.shipperID,CompanyName,count(o.OrderID) AS NumShipoedOrder
+from Shippers AS S INNER JOIN Orders As O On S.ShipperID = O.ShipVia 
+                    INNER JOIN [Order Details] As OD On O.OrderID = OD.OrderID
+                    INNER JOIN Products AS P On OD.ProductID = P.ProductID
+                    INNER JOIN Categories AS C On P.CategoryID = C.CategoryID
+where C.CategoryName = 'Seafood'
+    And O.ShipCountry = 'USA'
+    And YEAR(shippedDate) = 1997
+GROUP BY S.ShipperID,CompanyName
 ---------------------------------------------------------------------------
 -- *** 6 ตาราง ***
 /*17 : จงแสดงรหัสประเภทสินค้า ชื่อประเภท ยอดสั่งซื้อรวม(ไม่คิดส่วนลด) ที่ทำรายการขายโดย Margaret Peacock ในปี 1997 
 และสั่งซื้อโดยลูกค้าที่อาศัยอยู่ในประเทศสหรัฐอเมริกา สหราชอาณาจักร แคนาดา */
-
 --แบบ Product
-
+select C.CategoryID,CategoryName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Categories AS C , Products AS P , [Order Details] As OD
+    , Orders As O , Customers AS Cu , Employees AS E
+where C.CategoryID = P.CategoryID 
+    and P.ProductID = OD.ProductID 
+    and OD.OrderID = O.OrderID
+    and O.CustomerID = Cu.CustomerID
+    and O.EmployeeID = E.EmployeeID
+    And FirstName = 'Margaret' And LastName = 'Peacock'
+    And YEAR(OrderDate) = 1997
+    And Cu.Country in ('USA','UK','Canada')
+    group by c.CategoryID,CategoryName
 
 --แบบ Join
+select C.CategoryID,CategoryName,Sum(OD.UnitPrice * Quantity)AS totalVume
+from Categories AS C INNER JOIN Products AS P On C.CategoryID = P.CategoryID
+                    INNER JOIN [Order Details] As OD On P.ProductID = OD.ProductID 
+                    INNER JOIN Orders As O On OD.OrderID = O.OrderID
+                    INNER JOIN Customers AS Cu On O.CustomerID = Cu.CustomerID
+                    INNER JOIN Employees AS E On O.EmployeeID = E.EmployeeID
+where YEAR(OrderDate) = 1997
+    And Cu.Country In ('USA','UK','Canada')
+    And FirstName = 'Margaret' And LastName = 'Peacock'
+    group by c.CategoryID,CategoryName
 
 ---------------------------------------------------------------------------
 /*18 : จงแสดงรหัสสินค้า ชื่อสินค้า ยอดสั่งซื้อรวม(ไม่คิดส่วนลด) ของสินค้าที่จัดจำหน่ายโดยบริษัทที่อยู่ประเทศสหรัฐอเมริกา ที่มีการสั่งซื้อในปี 1997 
 จากลูกค้าที่อาศัยอยู่ในประเทศสหรัฐอเมริกา และทำการขายโดยพนักงานที่อาศัยอยู่ในประเทศสหรัฐอเมริกา */
-
 --แบบ Product
-
+select P.ProductID,ProductName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Products AS P ,Suppliers AS S ,[Order Details] As OD
+    , Orders As O , Customers AS Cu , Employees AS E
+where P.SupplierID = S.SupplierID 
+    and P.ProductID = OD.ProductID 
+    and OD.OrderID = O.OrderID
+    and O.CustomerID = Cu.CustomerID
+    and O.EmployeeID = E.EmployeeID
+    And S.Country = 'USA'
+    And Cu.Country = 'USA'
+    And E.Country = 'USA'
+    And YEAR(OrderDate) = 1997
+GROUP BY P.ProductID,ProductName
 
 --แบบ Join
+select P.ProductID,ProductName,Sum(OD.UnitPrice * Quantity)AS totalVume
+From Products AS P INNER JOIN Suppliers AS S On P.SupplierID = S.SupplierID
+                    INNER JOIN [Order Details] As OD On P.ProductID = OD.ProductID 
+                    INNER JOIN Orders As O On OD.OrderID = O.OrderID
+                    INNER JOIN Customers AS Cu On O.CustomerID = Cu.CustomerID
+                    INNER JOIN Employees AS E On O.EmployeeID = E.EmployeeID
+where S.Country = 'USA'
+    And Cu.Country = 'USA'
+    And E.Country = 'USA'
+    And YEAR(OrderDate) = 1997
+group by P.ProductID,ProductName
